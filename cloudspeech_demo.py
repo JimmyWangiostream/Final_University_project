@@ -21,6 +21,11 @@ import aiy.cloudspeech
 import aiy.voicehat
 import socket
 import pyaudio
+import re
+import requests
+import webbrowser
+from bs4 import BeautifulSoup
+import pyautogui
 #from pyaudio.src import pyaudio
 import wave
 import tempfile
@@ -38,6 +43,22 @@ sampwidth=2
 check=0
 button=aiy.voicehat.get_button()
 client=0
+
+def playing_music_on_yt(searchitem):
+    played=0
+    url="http://www.youtube.com/results?search_query="+searchitem
+    res=requests.get(url,verify=False)
+    soup=BeautifulSoup(res.text,'html.parser')
+    for entry in soup.select('a'):
+        m=re.search("v=(.*)",entry['href'])
+        if m:
+            #print (m.group(1))
+            if played==0:
+                played=1
+                sys.path.append("libs")
+                url="https://www.youtube.com/watch?v="+m.group(1)
+                webbrowser.open(url)
+   
 
 def speak(sentence):
     with tempfile.NamedTemporaryFile(delete=True) as fp:
@@ -106,7 +127,7 @@ def sendrequest():
     global client
     client.close()
     client1=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-    client1.connect(('140.116.20.138',9000))
+    client1.connect(('140.116.245.148',8000))
     client1.send(b'101_request\n')
     time.sleep(1)
     with open("101.wav","rb") as f:
@@ -114,7 +135,7 @@ def sendrequest():
         data=f.read()
         tt=client1.sendall(data)
         #print("file is sent")
-        #ndata=client.recv(2048)
+        #ndat8a=client.recv(2048)
         #print('1')
         #command=ndata.decode('utf-8')
         #speak(command)
@@ -242,6 +263,38 @@ def main():
                 data=client.recv(2048)
                 command=data.decode('utf-8')
                 speak(command)
+            elif '音樂' in text:
+                speak('請說出想聽的歌曲名稱')
+                print('Press the button and speak')
+                button.wait_for_press()
+                print('Listening...')
+                text = recognizer.recognize()
+                speak('請稍後')               
+                playing_music_on_yt(text)
+                while True:                
+                    print('Press the button and speak')
+                    button.wait_for_press()
+                    pyautogui.press('space')
+                    print('Listening...')
+                    text = recognizer.recognize()
+                    if text=='退出' or text=='停止':
+                        pyautogui.hotkey('ctrl','w')
+                        break
+                    elif text=='繼續':
+                        pyautogui.press('space')
+                    elif text=='大聲':
+                        pyautogui.press('up')
+                        pyautogui.press('up')
+                        pyautogui.press('up')
+                        pyautogui.press('space') 
+                    elif text=='小聲':
+                        pyautogui.press('down')
+                        pyautogui.press('down')
+                        pyautogui.press('down')
+                        pyautogui.press('space')
+                    elif text=='循環' or text =='取消':
+                        pyautogui.press('p')
+                        pyautogui.press('space')
             elif '乾洗' in text:
                 client.send(b'drywash\n')
                 data=client.recv(2048)
@@ -568,7 +621,7 @@ def main():
 def connect_server():
     global client
     client=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-    client.connect(('140.116.20.138',9000))
+    client.connect(('140.116.245.148',7000))
 
 if __name__ == '__main__':
     #client=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
